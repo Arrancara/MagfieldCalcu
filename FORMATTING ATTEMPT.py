@@ -53,6 +53,9 @@ def parsingfunction(filepath):
             ox.append(df.iloc[index,5])
             oy.append(df.iloc[index,6])
             angle.append(df.iloc[index,7])
+            #The variable known as "k" is a prefactor that is used within the equation to adjust for the angular
+            #displacement of the arc, so i.e. for a full circle k = 1, this is done to ensure that the limits of integration
+            #are the same.
             k.append(2 * np.pi / (df.iloc[index,7]))
             currentcircle.append(df.iloc[index, 9])
         else:
@@ -251,8 +254,6 @@ def Bintegrand(filepath):
     print(totalintegrandline,"totalintegrandline")
     return totalintegrandarc
     print(totalintegrandarc,"totalintegrandarc")
-Bintegrand(r'C:\Users\aavas\PycharmProjects\pythonProject1\Line Testing.xlsx')
-print(totalintegrandarc,totalintegrandarc)
 def Bfieldplotter(filepath):
     #Bintegrand function is ued to find the integrand of the path.
     Bintegrand(filepath)
@@ -304,7 +305,6 @@ def Bfieldplotter(filepath):
         margin=dict(r=20, l=10, b=10, t=10))
     fig.show()
     HTML(fig.to_html())
-Bfieldplotter(r'C:\Users\aavas\PycharmProjects\pythonProject1\Line Testing.xlsx')
 
 def Bfinder(filepath,x_cord,y_cord,z_cord):
     Bintegrand(filepath)
@@ -324,7 +324,6 @@ def Bfinder(filepath,x_cord,y_cord,z_cord):
                           (quad(dByldt, 0, 1, args=(x, y, z))[0] + quad(dByadt, 0, 2 * np.pi, args=(x, y, z))[0]),
                           (quad(dBzldt, 0, 1, args=(x, y, z))[0] + quad(dBzadt, 0, 2 * np.pi, args=(x, y, z))[0])]))
     print(B(x_cord, y_cord, z_cord))
-Bfinder(r'C:\Users\aavas\PycharmProjects\pythonProject1\Line Testing.xlsx',1,2,3)
 
 #Blineoptimise finds the minimum length of a line to find a desired B-field at a point.
 def Blineoptimise(desiredB,pointofeval_x,pointofeval_y,pointofeval_z):
@@ -341,16 +340,15 @@ def Blineoptimise(desiredB,pointofeval_x,pointofeval_y,pointofeval_z):
     # finding the length of wire that we need to have a desired B-field at a certain point.
     desired_B = desiredB
     l = smp.Matrix([(a + t * ((c - a))), (b + (t) * (d - b)), 0])
-    print(l)
     sep = r - l
     integrand = ((smp.diff(l, t)).cross(sep)) / (sep.norm() ** 3)
+    print("This is the integrand for optimsation: ", integrand)
     mu = float(1.25663706 * 10 ** (-6));
     constant = float(mu * current * N / (4 * np.pi))
     #Subbing in initial value.
-    integrandoptimise = integrand.subs(
 
+    integrandoptimise = integrand.subs(
         {a: x1[0], b: y1[0], x: pointofeval_x, y: pointofeval_y, z: pointofeval_z})
-    return integrand
 
     for index in range(3):
         integrandoptimise[index] = constant * integrandoptimise[index]
@@ -368,16 +366,15 @@ def Blineoptimise(desiredB,pointofeval_x,pointofeval_y,pointofeval_z):
     d = np.linspace(0, 1, 100)
     c = np.linspace(0, 1, 100)
     stored_B_array = []
+    #Tests all the values to find where the B-field is closest to the one we desire.
     for index in range(c.size):
         arr = []
         for count in range(d.size):
             val = np.linalg.norm(Boptimise(c[index], d[count]))
             arr.append(val)
         stored_B_array.append(arr)
-    print(stored_B_array[0][1])
     column_index = [];
     min_values = []
-
     for index in range(c.size):
         row_array = np.array(stored_B_array[index])
         idx = np.abs(row_array - desired_B).argmin()
@@ -389,9 +386,10 @@ def Blineoptimise(desiredB,pointofeval_x,pointofeval_y,pointofeval_z):
     d_val = column_index[idx]
     optimised_c = c[idx];
     optimised_d = d[d_val]
-    return print(" c= ", "{:e}".format(c[idx]), "d =", "{:e}".format(d[d_val]))
+    return print(" c= ", "{:e}".format(optimised_c), "d =", "{:e}".format(optimised_d))
     return c[idx]
     return d[d_val]
+    print(c[idx])
 Blineoptimise(1,1,1,1)
 #Function to optimise the B-field due to a circle centered at (ox,oy), the point of evaluation must be inputted.
 #Can add an angle input for added functionality of allowing for arcs, but it is omitted to reduce the number of inputs
@@ -457,7 +455,7 @@ def BcircleOptimse(desiredB, center_x,center_y,pointofeval_x,pointofeval_y,point
     B_field = np.linalg.norm(B(point_of_evaluation[0], point_of_evaluation[1], point_of_evaluation[2]))
     calc_radius.append(desired_B / B_field)
     print('The necessary radius is: ', calc_radius)
-    return calc_radius
+    return calc_radius  
 BcircleOptimse(1,0,0,1,1,1)
 
 #This requires the user to input a function in cartesian coordinates in vector form,
@@ -469,7 +467,7 @@ BcircleOptimse(1,0,0,1,1,1)
 # def Bfieldfunction(function_x,function_y,function_z):
 #     t, x, y, z = smp.symbols('t x y z')
 #     r = smp.Matrix([x, y, z])
-#     l = smp.Matrix[function_x,function_y,function_z]
+#     l = smp.Matrix([function_x,function_y,function_z])
 #     sep = r-l
 #     integrand =(smp.diff(l, t).cross(sep)) / sep.norm() ** 3
 #
@@ -489,6 +487,7 @@ BcircleOptimse(1,0,0,1,1,1)
 #         return np.array(([(quad(dBxdt, 0, 2 * np.pi, args=(x, y, z))[0]),
 #                           (quad(dBydt, 0, 2 * np.pi, args=(x, y, z))[0]),
 #                           (quad(dBzdt, 0, 2 * np.pi, args=(x, y, z))[0])]))
+#     aux = np.linspace(0,2*np.pi,100)
 #     def l(aux):
 #         return np.array([function_x,function_y,function_z])
 #     l_x,l_y,l_z = l(aux)
