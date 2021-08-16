@@ -1,0 +1,14 @@
+1)
+Parsing a circle, sometimes Inkscape stores the radius for a circle as rx,or simply r.
+Need to add a function that checks for either r or rx, and if true appends that as the radius to the list. 
+
+2)
+B-field of a function, needs to include other functions, and be able to change limits of
+parametisation. 
+Issues regarding setting 0 as np.zeros(len(aux)), maybe we can check the input as if input = 0, 
+set 0 as np.zeroes(len(aux))
+if input[0] = 0:
+	input[0] = np.zeroes(len(aux))
+else:
+	pass
+
