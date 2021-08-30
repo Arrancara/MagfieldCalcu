@@ -1,57 +1,85 @@
+import plotly.graph_objects as go
+import numpy as np
+from fields import Bfield
 
-class plotter:
+
+class Plotter:
     def __init__(self):
         pass
 
-    def Bfieldplotter(filepath):
-        # Bintegrand function is ued to find the integrand of the path.
-        Bintegrand(filepath)
-        t, x, y, z = smp.symbols('t x y z')
-        r = smp.Matrix([x, y, z])  # position vector of an arbitrary point
-        # Converting the symbolic function into a numerical one where values can be subbed in for the variables.
-        dBxadt = smp.lambdify([t, x, y, z], totalintegrandarc[0])
-        dByadt = smp.lambdify([t, x, y, z], totalintegrandarc[1])
-        dBzadt = smp.lambdify([t, x, y, z], totalintegrandarc[2])
-        dBxldt = smp.lambdify([t, x, y, z], totalintegrandline[0])
-        dByldt = smp.lambdify([t, x, y, z], totalintegrandline[1])
-        dBzldt = smp.lambdify([t, x, y, z], totalintegrandline[2])
-
-        # Function defined that is used to calculate the B-field at a certian point..
-        def B(x, y, z):
-            return np.array(([(quad(dBxldt, 0, 1, args=(x, y, z))[0] + quad(dBxadt, 0, 2 * np.pi, args=(x, y, z))[0]),
-                              (quad(dByldt, 0, 1, args=(x, y, z))[0] + quad(dByadt, 0, 2 * np.pi, args=(x, y, z))[0]),
-                              (quad(dBzldt, 0, 1, args=(x, y, z))[0] + quad(dBzadt, 0, 2 * np.pi, args=(x, y, z))[0])]))
-
+    def Bfieldplotter(self, filepath):
         # Change the array of x, to change where the scatter plot is plotted around
-        x = np.linspace(-2, 2, 20)  # creates an array of points
-
+        start = -10
+        stop = 10
+        x = np.linspace(start, stop, 15)  # creates an array of points
         xv, yv, zv = np.meshgrid(x, x, x)
-        # converts the signuature of the file into something that we can feed through to plotly
-        B_field = np.vectorize(B, signature='(),(),()->(n)')(xv, yv,
-                                                             zv)
-        Bx = B_field[:, :, :, 0]
-        By = B_field[:, :, :, 1]
-        Bz = B_field[:, :, :, 2]
+        x0 = xv.ravel()
+        y0 = yv.ravel()
+        z0 = zv.ravel()
+        B = Bfield(filepath)
+        dB = B.Bintegrand()
+        dB_num = B.make_numeric(dB)
+        tot = len(x0)
+        B0 = np.zeros([tot, 3])
 
-        data = go.Cone(x=xv.ravel(), y=yv.ravel(), z=zv.ravel(),
-                       u=Bx.ravel(), v=By.ravel(), w=Bz.ravel(),
-                       colorscale='Inferno', colorbar=dict(title='$x^2$'),
-                       sizemode="absolute")
-        # Defining the title, and the axis lables.
+        for i, x in enumerate(x0):
+            B0[i], _ = B.calculate_B_field(dB_num, (x0[i], y0[i], z0[i]))
+            print(i + 1, 'of', tot)
+        plot_type = 'iso'
+        if plot_type == 'cone':
+            data = go.Cone(x=x0, y=y0, z=z0, u=B0[:, 0], v=B0[:, 1], w=B0[:, 2],
+                           colorscale='Inferno', colorbar=dict(title='$hello$'),
+                           sizemode="scaled", visible=True)
+        elif plot_type == 'stream':
+            data = go.Streamtube(x=x0, y=y0, z=z0, u=B0[:, 0], v=B0[:, 1], w=B0[:, 2],
+                                 colorscale='Inferno', colorbar=dict(title='$hello$'), visible=True,
+                                 starts=dict(x=np.linspace(start, stop, 5), y=np.linspace(start, stop, 5),
+                                             z=np.linspace(start, stop, 5)))
+        elif plot_type == 'iso':
+            Bnorm = np.sqrt(np.sum(B0**2, axis=1))
+            data = go.Isosurface(x=x0, y=y0, z=z0, value=Bnorm,
+                           colorscale='Inferno', colorbar=dict(title='$hello$'), visible=True,
+                                 surface_count=20, opacity=0.25)
+
         layout = go.Layout(title=r'B-field',
                            scene=dict(xaxis_title=r'x',
                                       yaxis_title=r'y',
                                       zaxis_title=r'z',
                                       aspectratio=dict(x=1, y=1, z=1),
                                       camera_eye=dict(x=1.2, y=1.2, z=1.2)))
-        fig = go.Figure(data=data, layout_yaxis_range=[-4, 4], layout_xaxis_range=[-4, 4])
+        factor = 1.2
+        fig = go.Figure(data=data, layout_xaxis_range=[factor * start, factor * stop],
+                        layout_yaxis_range=[factor * start, factor * stop])
         # Defines the range of the axis.
         fig.update_layout(
             scene=dict(
-                xaxis=dict(nticks=4, range=[-5, 5], ),
-                yaxis=dict(nticks=4, range=[-5, 5], ),
-                zaxis=dict(nticks=4, range=[-5, 5]), ),
-            width=700,
-            margin=dict(r=20, l=10, b=10, t=10))
+                xaxis=dict(nticks=4, range=[factor * start, factor * stop], ),
+                yaxis=dict(nticks=4, range=[factor * start, factor * stop], ),
+                zaxis=dict(nticks=4, range=[factor * start, factor * stop]), ),
+            width=2500,
+            margin=dict(r=100, l=10, b=10, t=10))
+        fig.update_traces()
         fig.show()
-        HTML(fig.to_html())
+
+        # fig, ax = plt.subplots(subpl  ot_kw={'aspect': 'equal'})
+        # e = []
+        # for s in shapes:
+        #     if isinstance(s, Ellipse):
+        #         print(s.x, s.y, s.rx, s.ry)
+        #         e.append(Ell(xy=[s.x, s.y], width=2 * s.rx, height=2 * s.ry))
+        #
+        # print(e)
+        # for ee in e:
+        #     ax.add_artist(ee)
+        #
+        # ax.set_xlim([-300, 300])
+        # ax.set_ylim([-300, 300])
+        #
+        # plt.show()
+
+
+if __name__ == "__main__":
+    pt = Plotter()
+    filepath = r'C:\Users\Adam\Documents\Git\MagfieldCalcu'
+    file = r'\test_ellipse.svg'
+    pt.Bfieldplotter(filepath + file)

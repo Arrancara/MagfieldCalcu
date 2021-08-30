@@ -1,9 +1,5 @@
 import numpy as np
-import sympy as smp
-import pandas as pd
-import plotly.graph_objects as go
-# from IPython.display import HTML
-# from IPython.display import display
+
 from scipy.integrate import quad
 from sympy.interactive import printing
 
@@ -21,13 +17,6 @@ mu = 1.25663706e-6
 
 Blineoptimise(1, 1, 1, 1)
 
-
-
-
-    def B(x, y, z):
-        return np.array(([(quad(dBxadt, 0, 2 * np.pi, args=(x, y, z))[0]),
-                          (quad(dByadt, 0, 2 * np.pi, args=(x, y, z))[0]),
-                          (quad(dBzadt, 0, 2 * np.pi, args=(x, y, z))[0])]))
 
     stored_B = B(point_of_evaluation[0], point_of_evaluation[1], point_of_evaluation[2])
     temp_rad = []
